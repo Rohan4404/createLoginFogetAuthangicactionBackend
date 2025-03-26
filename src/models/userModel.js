@@ -18,7 +18,7 @@ const User = sequelize.define("loginUsers", {
   role: {
     type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: 'user',  // Default to 'user', but can be set to 'admin' in the register route
+    defaultValue: 'user', 
   },
   email: {
     type: DataTypes.STRING,
