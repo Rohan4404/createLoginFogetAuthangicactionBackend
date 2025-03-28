@@ -6,7 +6,7 @@ const nodemailer = require("nodemailer");
 
 // 🔑 Generate JWT Reset Token
 const generateResetToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "1h" });
 };
 
 // 📩 Send Reset Link via Email
@@ -40,27 +40,82 @@ const register = async (req, res) => {
       return res.status(400).json({ error: "Username already taken" });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ username, name, password: hashedPassword, role, email });
-    res.status(201).json({ message: "User registered successfully", user: newUser });
+    const newUser = await User.create({
+      username,
+      name,
+      password: hashedPassword,
+      role,
+      email,
+    });
+    res
+      .status(201)
+      .json({ message: "User registered successfully", user: newUser });
   } catch (error) {
-    res.status(500).json({ error: "Error registering user", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Error registering user", details: error.message });
   }
 };
 
 // 🔐 Login User
+// const login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     const user = await User.findOne({ where: { email } });
+//     if (!user) return res.status(404).json({ error: "User not found" });
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) return res.status(401).json({ error: "Invalid password" });
+
+//     const token = jwt.sign(
+//       {
+//         id: user.id,
+//         username: user.username,
+//         role: user.role,
+//         email: user.email,
+//       },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "1h" }
+//     );
+//     res.status(200).json({ message: "Login successful", token });
+//   } catch (error) {
+//     res.status(500).json({ error: "Error logging in", details: error.message });
+//   }
+// };
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // Check if email exists
     const user = await User.findOne({ where: { email } });
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
 
+    // Check if password matches
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: "Invalid password" });
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
 
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        email: user.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
     res.status(200).json({ message: "Login successful", token });
   } catch (error) {
-    res.status(500).json({ error: "Error logging in", details: error.message });
+    console.error("Login Error:", error);
+    res
+      .status(500)
+      .json({ error: "Something went wrong. Please try again later." });
   }
 };
 
@@ -80,8 +135,9 @@ const updateUser = async (req, res) => {
     await user.save();
     res.status(200).json({ message: "User updated successfully", user });
   } catch (error) {
-  
-    res.status(500).json({ error: "Error updating user", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Error updating user", details: error.message });
   }
 };
 
@@ -95,13 +151,16 @@ const updatePassword = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) return res.status(401).json({ error: "Current password is incorrect" });
+    if (!isMatch)
+      return res.status(401).json({ error: "Current password is incorrect" });
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
     res.status(200).json({ message: "Password updated successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Error updating password", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Error updating password", details: error.message });
   }
 };
 
@@ -110,35 +169,72 @@ const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ where: { email } });
-    if (!user) return res.status(404).json({ error: "User with this email does not exist" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ error: "User with this email does not exist" });
 
     const resetToken = generateResetToken(user.id);
     await sendResetEmail(email, resetToken);
     res.status(200).json({ message: "Password reset link sent to your email" });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ error: "Error sending reset email", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Error sending reset email", details: error.message });
   }
 };
 
 // 🔄 Reset Password
+// const resetPassword = async (req, res) => {
+//   try {
+//     const { token } = req.params;
+//     const { newPassword } = req.body;
+
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     const user = await User.findByPk(decoded.id);
+//     if (!user) return res.status(404).json({ error: "Invalid or expired token" });
+
+//     user.password = await bcrypt.hash(newPassword, 10);
+//     await user.save();
+//     res.status(200).json({ message: "Password has been reset successfully" });
+//   } catch (error) {
+
+//     console.log(error)
+//     res.status(500).json({ error: "Error resetting password", details: error.message });
+//   }
+// };
 const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { newPassword } = req.body;
 
+    if (!newPassword) {
+      return res.status(400).json({ error: "New password is required" });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findByPk(decoded.id);
-    if (!user) return res.status(404).json({ error: "Invalid or expired token" });
+    if (!user)
+      return res.status(404).json({ error: "Invalid or expired token" });
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
+
     res.status(200).json({ message: "Password has been reset successfully" });
   } catch (error) {
-
-    console.log(error)
-    res.status(500).json({ error: "Error resetting password", details: error.message });
+    console.log(error);
+    res
+      .status(500)
+      .json({ error: "Error resetting password", details: error.message });
   }
 };
 
-module.exports = { register, login, updateUser, updatePassword, forgotPassword, resetPassword };
+module.exports = {
+  register,
+  login,
+  updateUser,
+  updatePassword,
+  forgotPassword,
+  resetPassword,
+};
