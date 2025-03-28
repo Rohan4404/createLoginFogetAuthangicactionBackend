@@ -19,7 +19,7 @@ const sendResetEmail = async (email, resetToken) => {
     },
   });
 
-  const resetLink = `http://localhost:4000/api/user/reset-password/${resetToken}`;
+  const resetLink = `http://localhost:5174/reset-password/${resetToken}`;
 
   await transporter.sendMail({
     from: `"Password Reset" <${process.env.EMAIL_USERNAME}>`,
