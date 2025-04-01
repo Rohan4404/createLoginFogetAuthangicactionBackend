@@ -9,6 +9,10 @@ const UserCardData = sequelize.define(
       primaryKey: true,
       autoIncrement: true, // Auto-increment the id
     },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -27,8 +31,7 @@ const UserCardData = sequelize.define(
     },
   },
   {
-    // Allow Sequelize to automatically manage createdAt and updatedAt
-    timestamps: true, // Enable automatic handling of createdAt and updatedAt fields
+    timestamps: true, 
   }
 );
 
