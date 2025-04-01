@@ -1,5 +1,7 @@
 // authController.js
 const User = require("../models/userModel");
+
+const UserCardData = require("../models/userCardData");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
@@ -213,6 +215,83 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// store data of card value
+
+const storecardData = async (req, res) => {
+  try {
+    const { title, endPoint, lat, lon } = req.body;
+
+    // Check for missing fields
+    if (!title || !endPoint || !lat || !lon) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Insert data using Sequelize
+    const newCard = await UserCardData.create({
+      title,
+      endPoint,
+      lat,
+      lon,
+    });
+
+    // Return success message without 'id' in the response
+    res.status(201).json({
+      message: "Data inserted successfully",
+    });
+  } catch (error) {
+    console.error("Error inserting data:", error);
+    res.status(500).json({ error: "Database error" });
+  }
+};
+
+// get card data api
+
+const getcardData = async (req, res) => {
+  try {
+    // Fetch all user card data from the database
+    const allCards = await UserCardData.findAll();
+
+    // Check if data exists
+    if (allCards.length === 0) {
+      return res.status(404).json({ error: "No card data found" });
+    }
+
+    // Return the fetched data
+    res.status(200).json({
+      message: "Data retrieved successfully",
+      data: allCards,
+    });
+  } catch (error) {
+    console.error("Error retrieving data:", error);
+    res.status(500).json({ error: "Database error" });
+  }
+};
+
+//delete card data api
+
+const deleteCardData = async (req, res) => {
+  try {
+    const { title } = req.params;
+    if (!title) {
+      return res.status(400).json({ error: "Title is required" });
+    }
+
+    // Find the card by title and delete it
+    const deletedCard = await UserCardData.destroy({ where: { title } });
+
+    if (!deletedCard) {
+      return res.status(404).json({ error: "Card not found" });
+    }
+
+    res.status(200).json({ message: "Card deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting card:", error);
+    res.status(500).json({ error: "Database error" });
+  }
+};
+
+module.exports = { deleteCardData };
+
 module.exports = {
   register,
   login,
@@ -220,4 +299,7 @@ module.exports = {
   updatePassword,
   forgotPassword,
   resetPassword,
+  storecardData,
+  getcardData,
+  deleteCardData,
 };
