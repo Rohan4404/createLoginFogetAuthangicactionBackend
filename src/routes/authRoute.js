@@ -9,6 +9,7 @@ const {
   storecardData,
   getcardData,
   deleteCardData,
+  updateCardData,
 } = require("../controllers/authController");
 const { isAuth, isAdmin } = require("../middleware/authMiddleware"); // Ensure auth middleware is used
 const router = express.Router();
@@ -18,6 +19,7 @@ router.post("/login", login);
 router.post("/storecardData", storecardData);
 router.get("/getcardData", getcardData);
 router.delete("/deleteCardData/:title", deleteCardData);
+router.put("/updatecardData/:title", updateCardData);
 
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);

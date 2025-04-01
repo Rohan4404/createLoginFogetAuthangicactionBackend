@@ -290,7 +290,37 @@ const deleteCardData = async (req, res) => {
   }
 };
 
-module.exports = { deleteCardData };
+// update card data api
+
+const updateCardData = async (req, res) => {
+  try {
+    const { title } = req.params; // Extract title from URL parameters
+    const { endPoint, lat, lon } = req.body; // Extract new data from request body
+
+    if (!title) {
+      return res.status(400).json({ error: "Title is required" });
+    }
+
+    // Find the card by title
+    const card = await UserCardData.findOne({ where: { title } });
+
+    if (!card) {
+      return res.status(404).json({ error: "Card not found" });
+    }
+
+    // Update the card with new values
+    await card.update({
+      endPoint: endPoint || card.endPoint,
+      lat: lat || card.lat,
+      lon: lon || card.lon,
+    });
+
+    res.status(200).json({ message: "Card updated successfully" });
+  } catch (error) {
+    console.error("Error updating card:", error);
+    res.status(500).json({ error: "Database error" });
+  }
+};
 
 module.exports = {
   register,
@@ -302,4 +332,5 @@ module.exports = {
   storecardData,
   getcardData,
   deleteCardData,
+  updateCardData,
 };
