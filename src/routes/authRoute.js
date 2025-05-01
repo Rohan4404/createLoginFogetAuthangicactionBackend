@@ -25,4 +25,6 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 router.put("/update", isAuth, isAdmin, updateUser);
 router.put("/update-password", isAuth, updatePassword); //
+console.log("power sense");
 module.exports = router;
+// module.exports = router;
